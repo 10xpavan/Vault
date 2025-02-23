@@ -308,9 +308,6 @@ export default function HomePage() {
               }}
               onSearch={setSearchQuery}
             />
-                          onClick={() => setCurrentFolderId(folder.id)}
-                        >
-                          {folder.name}
                         </Button>
                       </div>
                     ))}
