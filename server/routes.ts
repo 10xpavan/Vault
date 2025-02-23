@@ -43,7 +43,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/folders", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const { name, parentId } = req.body;
-    const folder = await storage.createFolder(req.user.id, name, parentId);
+    
+    console.log('Creating folder with:', {
+      userId: req.user.id,
+      name,
+      parentId: parentId || 'null'
+    });
+    
+    const folder = await storage.createFolder(req.user.id, name, parentId || null);
+    
+    const allFolders = await storage.getFolders(req.user.id);
+    console.log('All folders after creation:', allFolders);
+    
     res.json(folder);
   });
 
