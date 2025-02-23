@@ -195,7 +195,11 @@ export default function HomePage() {
                       <DialogTitle>Create Folder</DialogTitle>
                     </DialogHeader>
                     <Form {...addFolderForm}>
-                      <form onSubmit={addFolderForm.handleSubmit((data) => addFolderMutation.mutate({ ...data, parentId: currentFolderId }))}>
+                      <form onSubmit={addFolderForm.handleSubmit((data) => {
+  const folderData = { ...data, parentId: currentFolderId };
+  console.log('Creating folder with data:', folderData);
+  addFolderMutation.mutate(folderData);
+})}>
                         <div className="space-y-4">
                           <FormField
                             control={addFolderForm.control}
