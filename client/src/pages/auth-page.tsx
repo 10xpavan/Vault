@@ -19,7 +19,7 @@ export default function AuthPage() {
 
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { email: "", password: "" },
   });
 
   if (user) {
@@ -42,12 +42,12 @@ export default function AuthPage() {
                 <div className="space-y-4">
                   <FormField
                     control={loginForm.control}
-                    name="username"
+                    name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="username" {...field} />
+                          <Input type="email" placeholder="you@example.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

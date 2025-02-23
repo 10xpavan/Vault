@@ -35,9 +35,12 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -132,7 +135,14 @@ export default function HomePage() {
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">LinkVault</h1>
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">{user?.username}</span>
+            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <span className="text-muted-foreground">{user?.email}</span>
             <Button variant="ghost" size="icon" onClick={() => logoutMutation.mutate()}>
               <LogOut className="h-4 w-4" />
             </Button>
