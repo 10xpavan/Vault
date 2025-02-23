@@ -5,8 +5,9 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const folders = pgTable("folders", {
@@ -15,6 +16,7 @@ export const folders = pgTable("folders", {
     .notNull()
     .references(() => users.id),
   name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const links = pgTable("links", {
@@ -39,6 +41,7 @@ export const tags = pgTable("tags", {
     .notNull()
     .references(() => users.id),
   name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const linkTags = pgTable("link_tags", {
@@ -55,6 +58,7 @@ export const sharedLinks = pgTable("shared_links", {
   linkId: integer("link_id")
     .notNull()
     .references(() => links.id),
+  sharedWithEmail: text("shared_with_email").notNull(),
   token: text("token").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -113,7 +117,12 @@ export const sharedLinksRelations = relations(sharedLinks, ({ one }) => ({
   }),
 }));
 
-export const insertUserSchema = createInsertSchema(users);
+// Schemas and Types
+export const insertUserSchema = createInsertSchema(users).extend({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address"),
+});
+
 export const insertFolderSchema = createInsertSchema(folders);
 export const insertLinkSchema = createInsertSchema(links);
 export const insertTagSchema = createInsertSchema(tags);
