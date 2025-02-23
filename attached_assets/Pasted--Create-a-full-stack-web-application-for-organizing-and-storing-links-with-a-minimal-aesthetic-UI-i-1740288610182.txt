@@ -1,0 +1,45 @@
+"Create a full-stack web application for organizing and storing links with a minimal, aesthetic UI inspired by X (Twitter). The application should have the following specifications:
+
+1. Core Functionality:
+Users can log in using Gmail, GitHub, or email/password authentication (consider using NextAuth.js or Firebase Auth).
+Links are organized into folders (rigid category system), but each link can also have multiple tags for better filtering.
+A search bar allows users to find links using keywords and filters (by category, tags, and date added).
+When a user adds a link, the system should automatically fetch metadata (title, description, and favicon).
+Users can add custom notes to each saved link.
+Users should be able to share links or entire folders with others via a unique shareable link.
+Users can export all their saved links as a JSON or CSV file for backup.
+2. Tech Stack:
+Frontend (Client-Side)
+Use React with Vite for a fast, modern frontend.
+Styling should be done with Tailwind CSS for a sleek, minimal UI.
+React Router for client-side navigation.
+ShadCN/UI components for a polished look (e.g., modals, buttons, search bar).
+Implement framer-motion for smooth UI animations.
+Backend (Server-Side)
+Use Node.js with Express for handling API requests.
+Use Drizzle ORM for interacting with the database.
+Store user data and links in PostgreSQL (hosted on Neon.tech).
+Implement API routes for:
+User authentication (signup, login, logout).
+Saving and fetching links, including metadata retrieval.
+Searching and filtering links by keywords, tags, and categories.
+Sharing links (creating unique shareable URLs).
+Exporting links as JSON/CSV.
+Database Schema (PostgreSQL on Neon.tech)
+Users Table: id, email, password_hash, created_at.
+Links Table: id, user_id, url, title, description, favicon_url, created_at.
+Categories Table: id, user_id, name.
+Tags Table: id, user_id, name.
+Link_Tags Table (many-to-many relationship): link_id, tag_id.
+Shared Links Table: id, link_id, shared_with_email, created_at.
+3. Additional Features:
+Dark Mode: The app should have a dark, minimal UI similar to X.
+Mobile Responsiveness: The app should be fully responsive and work well on both desktop and mobile.
+Performance Optimization: Use caching (e.g., Redis or in-memory caching for frequently accessed links).
+4. Development Environment:
+Use Replit to create a prototype, then export the code and continue development in Cursor AI.
+Ensure a clear project structure with client/, server/, and shared/ directories.
+Use ESLint + Prettier for consistent code formatting.
+Provide a README.md with instructions for setup and running the project locally.
+"Ensure that the generated code follows best practices, is modular, and avoids unnecessary complexity. The prototype should be fully functional with authentication, link storage, search, and metadata fetching."
+
