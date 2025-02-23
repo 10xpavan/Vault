@@ -77,7 +77,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const parsed = insertLinkSchema.parse({
       ...req.body,
       userId: req.user.id,
-      ...metadata
+      title: metadata.title,
+      description: metadata.description || null,
+      favicon: metadata.favicon || null
     });
 
     const link = await storage.createLink(parsed);
