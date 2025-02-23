@@ -290,24 +290,24 @@ export default function HomePage() {
             </Card>
           </div>
           <div className="flex-1 p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {currentFolderId && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setCurrentFolderId(folderPath[folderPath.length - 2]?.id || null)}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <div className="flex items-center gap-2">
-                    {folderPath.map((folder, index) => (
-                      <div key={folder.id} className="flex items-center">
-                        {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
-                        <Button
-                          variant="ghost"
+            <FolderExplorer
+              folders={folders}
+              currentFolderId={currentFolderId}
+              onFolderSelect={setCurrentFolderId}
+              onAddFolder={() => {
+                const name = window.prompt("Enter folder name");
+                if (name) {
+                  addFolderMutation.mutate({ name });
+                }
+              }}
+              onAddLink={() => {
+                const url = window.prompt("Enter URL");
+                if (url) {
+                  addLinkMutation.mutate({ url });
+                }
+              }}
+              onSearch={setSearchQuery}
+            />
                           onClick={() => setCurrentFolderId(folder.id)}
                         >
                           {folder.name}
