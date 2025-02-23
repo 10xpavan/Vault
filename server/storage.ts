@@ -78,9 +78,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFolder(userId: number, name: string, parentId?: number | null): Promise<Folder> {
+    // Ensure parentId is either a valid number or null, not undefined
+    const validParentId = parentId === undefined ? null : parentId;
+    
     const [folder] = await db
       .insert(folders)
-      .values({ userId, name, parentId })
+      .values({
+        userId,
+        name,
+        parentId: validParentId
+      })
       .returning();
     return folder;
   }
