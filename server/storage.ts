@@ -1,6 +1,6 @@
 import { users, folders, links, tags, linkTags, sharedLinks, type User, type InsertUser, type Folder, type Link, type Tag, type SharedLink } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, like, or } from "drizzle-orm";
+import { eq, and, like, or, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -30,8 +30,10 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Folder operations
-  createFolder(userId: number, name: string): Promise<Folder>;
-  getFolders(userId: number): Promise<Folder[]>;
+  createFolder(userId: number, name: string, parentId?: number): Promise<Folder>;
+  getFolders(userId: number, parentId?: number): Promise<Folder[]>;
+  getFolder(id: number): Promise<Folder | undefined>;
+  getFolderPath(folderId: number): Promise<Folder[]>;
 
   // Link operations
   createLink(link: Omit<Link, "id" | "createdAt">): Promise<Link>;
@@ -46,7 +48,7 @@ export interface IStorage {
   removeTagFromLink(linkId: number, tagId: number): Promise<void>;
 
   // Sharing
-  createSharedLink(linkId: number): Promise<SharedLink>;
+  createSharedLink(linkId: number, sharedWithEmail: string): Promise<SharedLink>;
   getSharedLink(token: string): Promise<Link | undefined>;
 }
 
@@ -75,16 +77,47 @@ export class DatabaseStorage implements IStorage {
     return newUser;
   }
 
-  async createFolder(userId: number, name: string): Promise<Folder> {
+  async createFolder(userId: number, name: string, parentId?: number): Promise<Folder> {
     const [folder] = await db
       .insert(folders)
-      .values({ userId, name })
+      .values({ userId, name, parentId })
       .returning();
     return folder;
   }
 
-  async getFolders(userId: number): Promise<Folder[]> {
-    return db.select().from(folders).where(eq(folders.userId, userId));
+  async getFolders(userId: number, parentId?: number): Promise<Folder[]> {
+    return db
+      .select()
+      .from(folders)
+      .where(
+        and(
+          eq(folders.userId, userId),
+          parentId === undefined
+            ? isNull(folders.parentId)
+            : eq(folders.parentId, parentId)
+        )
+      );
+  }
+
+  async getFolder(id: number): Promise<Folder | undefined> {
+    const [folder] = await db
+      .select()
+      .from(folders)
+      .where(eq(folders.id, id));
+    return folder;
+  }
+
+  async getFolderPath(folderId: number): Promise<Folder[]> {
+    const path: Folder[] = [];
+    let currentFolder = await this.getFolder(folderId);
+
+    while (currentFolder) {
+      path.unshift(currentFolder);
+      if (!currentFolder.parentId) break;
+      currentFolder = await this.getFolder(currentFolder.parentId);
+    }
+
+    return path;
   }
 
   async createLink(link: Omit<Link, "id" | "createdAt">): Promise<Link> {
@@ -178,10 +211,10 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(linkTags.linkId, linkId), eq(linkTags.tagId, tagId)));
   }
 
-  async createSharedLink(linkId: number): Promise<SharedLink> {
+  async createSharedLink(linkId: number, sharedWithEmail: string): Promise<SharedLink> {
     const [shared] = await db
       .insert(sharedLinks)
-      .values({ linkId, token: crypto.randomBytes(16).toString('hex'), createdAt: new Date() })
+      .values({ linkId, token: crypto.randomBytes(16).toString('hex'), createdAt: new Date(), sharedWithEmail })
       .returning();
     return shared;
   }

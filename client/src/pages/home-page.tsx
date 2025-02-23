@@ -24,18 +24,23 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  ChevronRight,
   FolderPlus,
   Link as LinkIcon,
   Search,
   Share2,
   Tag as TagIcon,
   LogOut,
-  Loader2
+  Loader2,
+  Moon,
+  Sun,
+  Folder as FolderIcon,
+  ChevronLeft,
+  Home
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function HomePage() {
@@ -43,77 +48,81 @@ export default function HomePage() {
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
+
+  const { data: currentFolder } = useQuery<Folder>({
+    queryKey: ["/api/folders", currentFolderId],
+    enabled: currentFolderId !== null
+  });
+
+  const { data: folderPath = [] } = useQuery<Folder[]>({
+    queryKey: ["/api/folders", currentFolderId, "path"],
+    enabled: currentFolderId !== null
+  });
 
   const { data: folders = [] } = useQuery<Folder[]>({
-    queryKey: ["/api/folders"]
+    queryKey: ["/api/folders", currentFolderId, "children"]
   });
 
   const { data: links = [] } = useQuery<Link[]>({
-    queryKey: ["/api/links", searchQuery],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (searchQuery) params.set("search", searchQuery);
-      const res = await fetch(`/api/links?${params}`);
-      if (!res.ok) throw new Error("Failed to fetch links");
-      return res.json();
-    }
+    queryKey: ["/api/links", currentFolderId, searchQuery]
   });
 
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ["/api/tags"]
   });
 
+  const addFolderSchema = z.object({
+    name: z.string().min(1, "Folder name is required")
+  });
+
   const addLinkSchema = z.object({
     url: z.string().url("Please enter a valid URL"),
-    folderId: z.number().min(1, "Please select a folder"),
     notes: z.string().optional()
+  });
+
+  const addFolderForm = useForm({
+    resolver: zodResolver(addFolderSchema),
+    defaultValues: {
+      name: ""
+    }
   });
 
   const addLinkForm = useForm({
     resolver: zodResolver(addLinkSchema),
     defaultValues: {
       url: "",
-      folderId: folders[0]?.id || 0,
       notes: ""
     }
   });
 
-  const addFolderForm = useForm({
-    resolver: zodResolver(z.object({
-      name: z.string().min(1, "Folder name is required")
-    })),
-    defaultValues: {
-      name: ""
+  const addFolderMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof addFolderSchema>) => {
+      const res = await apiRequest("POST", "/api/folders", {
+        ...data,
+        parentId: currentFolderId
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
+      toast({ title: "Folder created successfully" });
+      addFolderForm.reset();
     }
   });
 
   const addLinkMutation = useMutation({
     mutationFn: async (data: z.infer<typeof addLinkSchema>) => {
-      const res = await apiRequest("POST", "/api/links", data);
+      const res = await apiRequest("POST", "/api/links", {
+        ...data,
+        folderId: currentFolderId || folders[0]?.id
+      });
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/links"] });
       toast({ title: "Link added successfully" });
       addLinkForm.reset();
-    },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Failed to add link", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    }
-  });
-
-  const addFolderMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof addFolderForm.formState.resolver>) => {
-      const res = await apiRequest("POST", "/api/folders", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/folders"] });
-      toast({ title: "Folder created successfully" });
     }
   });
 
@@ -190,15 +199,26 @@ export default function HomePage() {
                   </DialogContent>
                 </Dialog>
 
-                <ScrollArea className="h-[300px] mt-4">
-                  <div className="space-y-2">
+                <ScrollArea className="h-[calc(100vh-300px)] mt-4">
+                  <div className="space-y-1">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setCurrentFolderId(null)}
+                    >
+                      <Home className="h-4 w-4 mr-2" />
+                      Home
+                    </Button>
                     {folders.map((folder) => (
                       <Button
                         key={folder.id}
                         variant="ghost"
                         className="w-full justify-start"
+                        onClick={() => setCurrentFolderId(folder.id)}
                       >
+                        <FolderIcon className="h-4 w-4 mr-2" />
                         {folder.name}
+                        <ChevronRight className="h-4 w-4 ml-auto" />
                       </Button>
                     ))}
                   </div>
@@ -224,6 +244,33 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                {currentFolderId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCurrentFolderId(folderPath[folderPath.length - 2]?.id || null)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                )}
+                <div className="flex items-center gap-2">
+                  {folderPath.map((folder, index) => (
+                    <div key={folder.id} className="flex items-center">
+                      {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
+                      <Button
+                        variant="ghost"
+                        onClick={() => setCurrentFolderId(folder.id)}
+                      >
+                        {folder.name}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -256,30 +303,6 @@ export default function HomePage() {
                               <FormLabel>URL</FormLabel>
                               <FormControl>
                                 <Input {...field} placeholder="https://example.com" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={addLinkForm.control}
-                          name="folderId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Folder</FormLabel>
-                              <FormControl>
-                                <select 
-                                  className="w-full p-2 rounded-md border"
-                                  {...field}
-                                  onChange={(e) => field.onChange(Number(e.target.value))}
-                                >
-                                  <option value={0}>Select a folder</option>
-                                  {folders.map((folder) => (
-                                    <option key={folder.id} value={folder.id}>
-                                      {folder.name}
-                                    </option>
-                                  ))}
-                                </select>
                               </FormControl>
                               <FormMessage />
                             </FormItem>

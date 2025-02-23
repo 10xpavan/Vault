@@ -15,6 +15,8 @@ export const folders = pgTable("folders", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id),
+  parentId: integer("parent_id")
+    .references(() => folders.id),
   name: text("name").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -74,6 +76,14 @@ export const foldersRelations = relations(folders, ({ one, many }) => ({
   user: one(users, {
     fields: [folders.userId],
     references: [users.id],
+  }),
+  parent: one(folders, {
+    fields: [folders.parentId],
+    references: [folders.id],
+  }),
+  children: many(folders, {
+    fields: [folders.id],
+    references: [folders.parentId],
   }),
   links: many(links),
 }));
