@@ -179,20 +179,25 @@ export default function HomePage() {
                       <DialogTitle>Create Folder</DialogTitle>
                     </DialogHeader>
                     <Form {...addFolderForm}>
-                      <form onSubmit={addFolderForm.handleSubmit((data) => addFolderMutation.mutate(data))}>
-                        <FormField
-                          control={addFolderForm.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Name</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <form onSubmit={addFolderForm.handleSubmit((data) => addFolderMutation.mutate({ ...data, parentId: currentFolderId }))}>
+                        <div className="space-y-4">
+                          <FormField
+                            control={addFolderForm.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Name</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Creating folder in: {currentFolderId ? folderPath[folderPath.length - 1]?.name : 'Root'}
+                          </div>
+                        </div>
                         <Button type="submit" className="mt-4">Create</Button>
                       </form>
                     </Form>
@@ -228,6 +233,7 @@ export default function HomePage() {
                       {folders.map((folder) => (
                         <div
                           key={folder.id}
+                          className={`${folder.parentId ? 'ml-4 border-l-2 pl-2' : ''}`}
                           className="flex items-center p-2 hover:bg-muted rounded-md cursor-pointer"
                           onClick={() => setCurrentFolderId(folder.id)}
                         >
