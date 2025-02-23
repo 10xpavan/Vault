@@ -30,7 +30,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-12 bg-card p-8 rounded-lg shadow-sm border border-border/10">
         <div className="text-center space-y-3">
-          <h1 className="text-3xl font-light tracking-wide">LinkVault</h1>
+          <h1 className="text-3xl font-light tracking-wide">Vault</h1>
           <div className="h-[1px] w-12 bg-border mx-auto"></div>
           <p className="text-sm text-muted-foreground">Your Personal Link Sanctuary</p>
         </div>
