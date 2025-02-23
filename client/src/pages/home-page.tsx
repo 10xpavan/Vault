@@ -201,26 +201,57 @@ export default function HomePage() {
 
                 <ScrollArea className="h-[calc(100vh-300px)] mt-4">
                   <div className="space-y-1">
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start"
-                      onClick={() => setCurrentFolderId(null)}
-                    >
-                      <Home className="h-4 w-4 mr-2" />
-                      Home
-                    </Button>
-                    {folders.map((folder) => (
+                    <div className="flex items-center mb-4 px-2">
                       <Button
-                        key={folder.id}
                         variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => setCurrentFolderId(folder.id)}
+                        size="sm"
+                        onClick={() => setCurrentFolderId(folderPath[folderPath.length - 2]?.id || null)}
+                        disabled={!currentFolderId}
                       >
-                        <FolderIcon className="h-4 w-4 mr-2" />
-                        {folder.name}
-                        <ChevronRight className="h-4 w-4 ml-auto" />
+                        <ChevronLeft className="h-4 w-4" />
                       </Button>
-                    ))}
+                      <div className="flex items-center mx-2 text-sm text-muted-foreground">
+                        {currentFolderId ? folderPath.map((folder, i) => (
+                          <div key={folder.id} className="flex items-center">
+                            {i > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
+                            <span 
+                              className="hover:underline cursor-pointer" 
+                              onClick={() => setCurrentFolderId(folder.id)}
+                            >
+                              {folder.name}
+                            </span>
+                          </div>
+                        )) : 'Home'}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {folders.map((folder) => (
+                        <div
+                          key={folder.id}
+                          className="flex items-center p-2 hover:bg-muted rounded-md cursor-pointer"
+                          onClick={() => setCurrentFolderId(folder.id)}
+                        >
+                          <FolderIcon className="h-4 w-4 mr-2 text-yellow-500" />
+                          {folder.name}
+                        </div>
+                      ))}
+                      {links.map((link) => (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center p-2 hover:bg-muted rounded-md"
+                        >
+                          {link.favicon ? (
+                            <img src={link.favicon} className="h-4 w-4 mr-2" alt="" />
+                          ) : (
+                            <LinkIcon className="h-4 w-4 mr-2" />
+                          )}
+                          {link.title}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </ScrollArea>
               </CardContent>

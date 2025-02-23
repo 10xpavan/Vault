@@ -52,9 +52,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const folderId = req.query.folderId ? Number(req.query.folderId) : undefined;
     const search = req.query.search?.toString();
 
-    let links = folderId 
-      ? await storage.getLinksByFolder(folderId)
-      : await storage.getLinks(req.user.id);
+    let links = [];
+    if (folderId !== undefined) {
+      links = await storage.getLinksByFolder(folderId);
+    }
 
     if (search) {
       const searchLower = search.toLowerCase();
