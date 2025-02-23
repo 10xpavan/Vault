@@ -55,17 +55,25 @@ export default function HomePage() {
       url: z.string().url(),
       folderId: z.number(),
       notes: z.string().optional()
-    }))
+    })),
+    defaultValues: {
+      folderId: folders[0]?.id || 0,
+      url: "",
+      notes: ""
+    }
   });
 
   const addFolderForm = useForm({
     resolver: zodResolver(z.object({
       name: z.string().min(1)
-    }))
+    })),
+    defaultValues: {
+      name: ""
+    }
   });
 
   const addLinkMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof addLinkForm.formState.resolver>) => {
+    mutationFn: async (data: { url: string; folderId: number; notes?: string }) => {
       const res = await apiRequest("POST", "/api/links", data);
       return res.json();
     },
