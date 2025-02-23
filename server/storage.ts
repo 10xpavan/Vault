@@ -1,128 +1,132 @@
-import { User, InsertUser, Folder, Link, Tag, SharedLink } from "@shared/schema";
+import { users, folders, links, tags, linkTags, sharedLinks, type User, type InsertUser, type Folder, type Link, type Tag, type SharedLink } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 import crypto from "crypto";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   sessionStore: session.Store;
-  
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Folder operations
   createFolder(userId: number, name: string): Promise<Folder>;
   getFolders(userId: number): Promise<Folder[]>;
-  
+
   // Link operations
   createLink(link: Omit<Link, "id" | "createdAt">): Promise<Link>;
   getLinks(userId: number): Promise<Link[]>;
   getLinksByFolder(folderId: number): Promise<Link[]>;
-  
+
   // Tag operations
   createTag(userId: number, name: string): Promise<Tag>;
   getTags(userId: number): Promise<Tag[]>;
   addTagToLink(linkId: number, tagId: number): Promise<void>;
-  
+
   // Sharing
   createSharedLink(linkId: number): Promise<SharedLink>;
   getSharedLink(token: string): Promise<Link | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private folders: Map<number, Folder>;
-  private links: Map<number, Link>;
-  private tags: Map<number, Tag>;
-  private linkTags: Map<string, boolean>;
-  private sharedLinks: Map<string, SharedLink>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  private currentId: { [key: string]: number };
 
   constructor() {
-    this.users = new Map();
-    this.folders = new Map();
-    this.links = new Map();
-    this.tags = new Map();
-    this.linkTags = new Map();
-    this.sharedLinks = new Map();
-    this.currentId = { users: 1, folders: 1, links: 1, tags: 1 };
-    this.sessionStore = new MemoryStore({ checkPeriod: 86400000 });
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
+    });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const id = this.currentId.users++;
-    const newUser = { ...user, id };
-    this.users.set(id, newUser);
+    const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
 
   async createFolder(userId: number, name: string): Promise<Folder> {
-    const id = this.currentId.folders++;
-    const folder = { id, userId, name };
-    this.folders.set(id, folder);
+    const [folder] = await db
+      .insert(folders)
+      .values({ userId, name })
+      .returning();
     return folder;
   }
 
   async getFolders(userId: number): Promise<Folder[]> {
-    return Array.from(this.folders.values()).filter(f => f.userId === userId);
+    return db.select().from(folders).where(eq(folders.userId, userId));
   }
 
   async createLink(link: Omit<Link, "id" | "createdAt">): Promise<Link> {
-    const id = this.currentId.links++;
-    const newLink = { ...link, id, createdAt: new Date() };
-    this.links.set(id, newLink);
+    const [newLink] = await db
+      .insert(links)
+      .values({ ...link, createdAt: new Date() })
+      .returning();
     return newLink;
   }
 
   async getLinks(userId: number): Promise<Link[]> {
-    return Array.from(this.links.values()).filter(l => l.userId === userId);
+    return db.select().from(links).where(eq(links.userId, userId));
   }
 
   async getLinksByFolder(folderId: number): Promise<Link[]> {
-    return Array.from(this.links.values()).filter(l => l.folderId === folderId);
+    return db.select().from(links).where(eq(links.folderId, folderId));
   }
 
   async createTag(userId: number, name: string): Promise<Tag> {
-    const id = this.currentId.tags++;
-    const tag = { id, userId, name };
-    this.tags.set(id, tag);
+    const [tag] = await db
+      .insert(tags)
+      .values({ userId, name })
+      .returning();
     return tag;
   }
 
   async getTags(userId: number): Promise<Tag[]> {
-    return Array.from(this.tags.values()).filter(t => t.userId === userId);
+    return db.select().from(tags).where(eq(tags.userId, userId));
   }
 
   async addTagToLink(linkId: number, tagId: number): Promise<void> {
-    const key = `${linkId}-${tagId}`;
-    this.linkTags.set(key, true);
+    await db.insert(linkTags).values({ linkId, tagId });
   }
 
   async createSharedLink(linkId: number): Promise<SharedLink> {
-    const id = this.currentId.links++;
-    const token = crypto.randomBytes(16).toString('hex');
-    const sharedLink = { id, linkId, token, createdAt: new Date() };
-    this.sharedLinks.set(token, sharedLink);
-    return sharedLink;
+    const [shared] = await db
+      .insert(sharedLinks)
+      .values({ linkId, token: crypto.randomBytes(16).toString('hex'), createdAt: new Date() })
+      .returning();
+    return shared;
   }
 
   async getSharedLink(token: string): Promise<Link | undefined> {
-    const shared = this.sharedLinks.get(token);
+    const [shared] = await db
+      .select()
+      .from(sharedLinks)
+      .where(eq(sharedLinks.token, token));
+
     if (!shared) return undefined;
-    return this.links.get(shared.linkId);
+
+    const [link] = await db
+      .select()
+      .from(links)
+      .where(eq(links.id, shared.linkId));
+
+    return link;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
