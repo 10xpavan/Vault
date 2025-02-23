@@ -308,12 +308,9 @@ export default function HomePage() {
               }}
               onSearch={setSearchQuery}
             />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Dialog>
+          </div>
+        </div>
+        <Dialog>
                   <DialogTrigger asChild>
                     <Button>
                       <LinkIcon className="h-4 w-4 mr-2" />
@@ -371,76 +368,6 @@ export default function HomePage() {
                     </Form>
                   </DialogContent>
                 </Dialog>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    className="pl-9 w-full"
-                    placeholder="Search links..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {links.map((link) => (
-                  <motion.div
-                    key={link.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                  >
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            {link.favicon && (
-                              <img src={link.favicon} alt="" className="w-4 h-4" />
-                            )}
-                            <div>
-                              <CardTitle className="text-base">
-                                <a
-                                  href={link.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:underline"
-                                >
-                                  {link.title}
-                                </a>
-                              </CardTitle>
-                              {link.description && (
-                                <CardDescription>
-                                  {link.description}
-                                </CardDescription>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => shareLinkMutation.mutate(link.id)}
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      {link.notes && (
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground">
-                            {link.notes}
-                          </p>
-                        </CardContent>
-                      )}
-                    </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   );
