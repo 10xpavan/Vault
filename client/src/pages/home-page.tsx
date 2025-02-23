@@ -3,69 +3,81 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Folder, Link, Tag } from "@shared/schema";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  FolderPlus, 
-  Link as LinkIcon, 
-  Search, 
-  Share2, 
+import {
+  FolderPlus,
+  Link as LinkIcon,
+  Search,
+  Share2,
   Tag as TagIcon,
-  LogOut 
+  LogOut,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function HomePage() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: folders = [] } = useQuery<Folder[]>({
     queryKey: ["/api/folders"]
   });
 
   const { data: links = [] } = useQuery<Link[]>({
-    queryKey: ["/api/links"]
+    queryKey: ["/api/links", searchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.set("search", searchQuery);
+      const res = await fetch(`/api/links?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch links");
+      return res.json();
+    }
   });
 
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ["/api/tags"]
   });
 
+  const addLinkSchema = z.object({
+    url: z.string().url("Please enter a valid URL"),
+    folderId: z.number().min(1, "Please select a folder"),
+    notes: z.string().optional()
+  });
+
   const addLinkForm = useForm({
-    resolver: zodResolver(z.object({
-      url: z.string().url(),
-      folderId: z.number(),
-      notes: z.string().optional()
-    })),
+    resolver: zodResolver(addLinkSchema),
     defaultValues: {
-      folderId: folders[0]?.id || 0,
       url: "",
+      folderId: folders[0]?.id || 0,
       notes: ""
     }
   });
 
   const addFolderForm = useForm({
     resolver: zodResolver(z.object({
-      name: z.string().min(1)
+      name: z.string().min(1, "Folder name is required")
     })),
     defaultValues: {
       name: ""
@@ -73,13 +85,21 @@ export default function HomePage() {
   });
 
   const addLinkMutation = useMutation({
-    mutationFn: async (data: { url: string; folderId: number; notes?: string }) => {
+    mutationFn: async (data: z.infer<typeof addLinkSchema>) => {
       const res = await apiRequest("POST", "/api/links", data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/links"] });
       toast({ title: "Link added successfully" });
+      addLinkForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to add link", 
+        description: error.message,
+        variant: "destructive" 
+      });
     }
   });
 
@@ -150,6 +170,7 @@ export default function HomePage() {
                               <FormControl>
                                 <Input {...field} />
                               </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -196,7 +217,12 @@ export default function HomePage() {
             <div className="flex gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9" placeholder="Search links..." />
+                <Input 
+                  className="pl-9" 
+                  placeholder="Search links..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
               <Dialog>
                 <DialogTrigger asChild>
@@ -219,8 +245,9 @@ export default function HomePage() {
                             <FormItem>
                               <FormLabel>URL</FormLabel>
                               <FormControl>
-                                <Input {...field} />
+                                <Input {...field} placeholder="https://example.com" />
                               </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -236,6 +263,7 @@ export default function HomePage() {
                                   {...field}
                                   onChange={(e) => field.onChange(Number(e.target.value))}
                                 >
+                                  <option value={0}>Select a folder</option>
                                   {folders.map((folder) => (
                                     <option key={folder.id} value={folder.id}>
                                       {folder.name}
@@ -243,6 +271,7 @@ export default function HomePage() {
                                   ))}
                                 </select>
                               </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -251,14 +280,27 @@ export default function HomePage() {
                           name="notes"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Notes</FormLabel>
+                              <FormLabel>Notes (optional)</FormLabel>
                               <FormControl>
-                                <Input {...field} />
+                                <Input {...field} placeholder="Add any notes about this link" />
                               </FormControl>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <Button type="submit">Add Link</Button>
+                        <Button 
+                          type="submit" 
+                          disabled={addLinkMutation.isPending}
+                        >
+                          {addLinkMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            'Add Link'
+                          )}
+                        </Button>
                       </div>
                     </form>
                   </Form>
