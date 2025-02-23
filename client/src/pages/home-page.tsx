@@ -361,11 +361,11 @@ export default function HomePage() {
               </Dialog>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  className="pl-9"
+                  className="pl-9 w-full"
                   placeholder="Search links..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

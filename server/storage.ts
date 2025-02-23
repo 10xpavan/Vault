@@ -152,6 +152,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLinks(userId: number, search?: string): Promise<Link[]> {
+    const cacheKey = `links:${userId}:${search || ''}`;
+    const cached = cache.get<Link[]>(cacheKey);
+    if (cached) return cached;
+
     let query = db.select().from(links).where(eq(links.userId, userId));
 
     if (search) {
@@ -165,7 +169,9 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    return query;
+    const results = await query;
+    cache.set(cacheKey, results);
+    return results;
   }
 
   async getLinksByFolder(folderId: number): Promise<Link[]> {
