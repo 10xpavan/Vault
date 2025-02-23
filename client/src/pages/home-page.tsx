@@ -233,8 +233,7 @@ export default function HomePage() {
                       {folders.map((folder) => (
                         <div
                           key={folder.id}
-                          className={`${folder.parentId ? 'ml-4 border-l-2 pl-2' : ''}`}
-                          className="flex items-center p-2 hover:bg-muted rounded-md cursor-pointer"
+                          className={`flex items-center p-2 hover:bg-muted rounded-md cursor-pointer ${folder.parentId ? 'ml-4 border-l-2 pl-2' : ''}`}
                           onClick={() => setCurrentFolderId(folder.id)}
                         >
                           <FolderIcon className="h-4 w-4 mr-2 text-yellow-500" />
