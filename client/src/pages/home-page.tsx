@@ -138,6 +138,22 @@ export default function HomePage() {
     }
   });
 
+  const renderFolderHierarchy = (folders: Folder[], indentLevel: number = 0): JSX.Element[] => {
+    return folders.map((folder) => (
+      <>
+        <div
+          key={folder.id}
+          className={`flex items-center p-2 hover:bg-muted rounded-md cursor-pointer ml-${indentLevel * 2} border-l-2 pl-2`}
+          onClick={() => setCurrentFolderId(folder.id)}
+        >
+          <FolderIcon className="h-4 w-4 mr-2 text-yellow-500" />
+          {folder.name}
+        </div>
+        {folder.children && renderFolderHierarchy(folder.children, indentLevel + 1)}
+      </>
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b p-4">
@@ -230,16 +246,7 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
-                      {folders.map((folder) => (
-                        <div
-                          key={folder.id}
-                          className={`flex items-center p-2 hover:bg-muted rounded-md cursor-pointer ${folder.parentId ? 'ml-4 border-l-2 pl-2' : ''}`}
-                          onClick={() => setCurrentFolderId(folder.id)}
-                        >
-                          <FolderIcon className="h-4 w-4 mr-2 text-yellow-500" />
-                          {folder.name}
-                        </div>
-                      ))}
+                      {renderFolderHierarchy(folders)}
                       {links.map((link) => (
                         <a
                           key={link.id}
@@ -278,159 +285,159 @@ export default function HomePage() {
               </CardContent>
             </Card>
           </div>
-        </div>
-        <div className="flex-1 p-6"> {/* Added to create the right-hand panel */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between"> {/* Adjusted to justify-between */}
-              <div className="flex items-center gap-2">
-                {currentFolderId && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setCurrentFolderId(folderPath[folderPath.length - 2]?.id || null)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                )}
+          <div className="flex-1 p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {folderPath.map((folder, index) => (
-                    <div key={folder.id} className="flex items-center">
-                      {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
-                      <Button
-                        variant="ghost"
-                        onClick={() => setCurrentFolderId(folder.id)}
-                      >
-                        {folder.name}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <Dialog> {/* Moved Add Link button to the right */}
-                <DialogTrigger asChild>
-                  <Button>
-                    <LinkIcon className="h-4 w-4 mr-2" />
-                    Add Link
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Link</DialogTitle>
-                  </DialogHeader>
-                  <Form {...addLinkForm}>
-                    <form onSubmit={addLinkForm.handleSubmit((data) => addLinkMutation.mutate(data))}>
-                      <div className="space-y-4">
-                        <FormField
-                          control={addLinkForm.control}
-                          name="url"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>URL</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="https://example.com" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={addLinkForm.control}
-                          name="notes"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Notes (optional)</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="Add any notes about this link" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="submit"
-                          disabled={addLinkMutation.isPending}
-                        >
-                          {addLinkMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            'Add Link'
-                          )}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9 w-full"
-                  placeholder="Search links..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {links.map((link) => (
-                <motion.div
-                  key={link.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          {link.favicon && (
-                            <img src={link.favicon} alt="" className="w-4 h-4" />
-                          )}
-                          <div>
-                            <CardTitle className="text-base">
-                              <a
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:underline"
-                              >
-                                {link.title}
-                              </a>
-                            </CardTitle>
-                            {link.description && (
-                              <CardDescription>
-                                {link.description}
-                              </CardDescription>
-                            )}
-                          </div>
-                        </div>
+                  {currentFolderId && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setCurrentFolderId(folderPath[folderPath.length - 2]?.id || null)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <div className="flex items-center gap-2">
+                    {folderPath.map((folder, index) => (
+                      <div key={folder.id} className="flex items-center">
+                        {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
                         <Button
                           variant="ghost"
-                          size="icon"
-                          onClick={() => shareLinkMutation.mutate(link.id)}
+                          onClick={() => setCurrentFolderId(folder.id)}
                         >
-                          <Share2 className="h-4 w-4" />
+                          {folder.name}
                         </Button>
                       </div>
-                    </CardHeader>
-                    {link.notes && (
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          {link.notes}
-                        </p>
-                      </CardContent>
-                    )}
-                  </Card>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                    ))}
+                  </div>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <LinkIcon className="h-4 w-4 mr-2" />
+                      Add Link
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Link</DialogTitle>
+                    </DialogHeader>
+                    <Form {...addLinkForm}>
+                      <form onSubmit={addLinkForm.handleSubmit((data) => addLinkMutation.mutate(data))}>
+                        <div className="space-y-4">
+                          <FormField
+                            control={addLinkForm.control}
+                            name="url"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>URL</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="https://example.com" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={addLinkForm.control}
+                            name="notes"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Notes (optional)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Add any notes about this link" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button
+                            type="submit"
+                            disabled={addLinkMutation.isPending}
+                          >
+                            {addLinkMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              'Add Link'
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9 w-full"
+                    placeholder="Search links..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {links.map((link) => (
+                  <motion.div
+                    key={link.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            {link.favicon && (
+                              <img src={link.favicon} alt="" className="w-4 h-4" />
+                            )}
+                            <div>
+                              <CardTitle className="text-base">
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:underline"
+                                >
+                                  {link.title}
+                                </a>
+                              </CardTitle>
+                              {link.description && (
+                                <CardDescription>
+                                  {link.description}
+                                </CardDescription>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => shareLinkMutation.mutate(link.id)}
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      {link.notes && (
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground">
+                            {link.notes}
+                          </p>
+                        </CardContent>
+                      )}
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </main>

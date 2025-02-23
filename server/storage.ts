@@ -30,7 +30,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Folder operations
-  createFolder(userId: number, name: string, parentId?: number): Promise<Folder>;
+  createFolder(userId: number, name: string, parentId?: number | null): Promise<Folder>;
   getFolders(userId: number, parentId?: number): Promise<Folder[]>;
   getFolder(id: number): Promise<Folder | undefined>;
   getFolderPath(folderId: number): Promise<Folder[]>;
@@ -77,7 +77,7 @@ export class DatabaseStorage implements IStorage {
     return newUser;
   }
 
-  async createFolder(userId: number, name: string, parentId?: number): Promise<Folder> {
+  async createFolder(userId: number, name: string, parentId?: number | null): Promise<Folder> {
     const [folder] = await db
       .insert(folders)
       .values({ userId, name, parentId })
